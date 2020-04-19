@@ -1,5 +1,10 @@
 package com.bawei.dianshangjin02.util;
 
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.os.Handler;
+
 import com.bawei.dianshangjin02.contact.IContact;
 
 import org.jetbrains.annotations.NotNull;
@@ -23,6 +28,8 @@ public class OkHttpUtil {
     private OkHttpClient okHttpClient;
     public static final int GET = 0;
     public static final int POST = 1;
+    //使用Handler把okhttp异步请求结果从子线程发送到主线程
+    private Handler handler = new Handler();
     //单例（饿汉式）
     private static final OkHttpUtil OK_HTTP_UTIL = new OkHttpUtil();
     private OkHttpUtil() {
@@ -37,6 +44,16 @@ public class OkHttpUtil {
     }
     public static OkHttpUtil getOkHttpUtil() {
         return OK_HTTP_UTIL;
+    }
+    //封装网络判断方法
+    public boolean hasNet(){
+        //判断网络
+        ConnectivityManager connectivityManager = (ConnectivityManager) MyApplication.getContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+        if(activeNetworkInfo != null && activeNetworkInfo.isAvailable()){
+            return true;
+        }
+        return false;
     }
     //发起请求
     public void request(int method, String url, Map<String,String> params, IContact.IModel iModel){
@@ -61,21 +78,31 @@ public class OkHttpUtil {
                 .url(url + pam)//链接
                 .get()//请求方式
                 .build();
-        //构建一个Call回调对象，进行异步请求（相当于子线程，其回调结果也处于子线程中）
+        //构建一个Call回调对象，进行异步请求
         Call call = okHttpClient.newCall(request);
         call.enqueue(new Callback() {
             @Override
-            public void onFailure(@NotNull Call call, @NotNull IOException e) {
+            public void onFailure(@NotNull Call call, @NotNull final IOException e) {
                 e.printStackTrace();
-                //反馈
-                iModel.requestError(e.getMessage());
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        //反馈
+                        iModel.requestError(e.getMessage());
+                    }
+                });
             }
             @Override
             public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
                 //获取结果
-                String string = response.body().string();
-                //反馈
-                iModel.requestSuccess(string);
+                final String string = response.body().string();
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        //反馈
+                        iModel.requestSuccess(string);
+                    }
+                });
             }
         });
     }
@@ -97,17 +124,27 @@ public class OkHttpUtil {
         Call call = okHttpClient.newCall(request);
         call.enqueue(new Callback() {
             @Override
-            public void onFailure(@NotNull Call call, @NotNull IOException e) {
+            public void onFailure(@NotNull Call call, @NotNull final IOException e) {
                 e.printStackTrace();
-                //反馈
-                iModel.requestError(e.getMessage());
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        //反馈
+                        iModel.requestError(e.getMessage());
+                    }
+                });
             }
             @Override
             public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
                 //获取结果
-                String string = response.body().string();
-                //反馈
-                iModel.requestSuccess(string);
+                final String string = response.body().string();
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        //反馈
+                        iModel.requestSuccess(string);
+                    }
+                });
             }
         });
     }
