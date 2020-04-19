@@ -11,6 +11,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -39,7 +40,13 @@ public class OkHttpUtil {
         httpLoggingInterceptor.level(HttpLoggingInterceptor.Level.BODY);
         //OKhttp使用建造者模式创建对象
         okHttpClient = new OkHttpClient.Builder()
+                //拦截器
                 .addInterceptor(httpLoggingInterceptor)
+                //设置超时时间（单位不同，都是5秒钟）
+                .connectTimeout(5, TimeUnit.SECONDS)
+                .readTimeout(5000,TimeUnit.MILLISECONDS)
+                .writeTimeout(5000,TimeUnit.MILLISECONDS)
+                //完成建造
                 .build();
     }
     public static OkHttpUtil getOkHttpUtil() {
